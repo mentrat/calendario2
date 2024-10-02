@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horario Escolar Interactivo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e6f2ff;
+            margin: 0;
+            padding: 20px;
+        }
+        input[type="color"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: linear-gradient(to bottom, #f0f0f0, #ddd);
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  color: #333;
+  font-weight: bold;
+}
+
+        input[type="text"] {
+            width: 200px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #3366cc;
+            text-align: center;
+        }
+
+        .materias {
+            background-color: #fff9c4;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .materia-item {
+            display: inline-block;
+            background-color: #ffffff;
+            border-radius: 20px;
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            font-weight: bold;
+        }
+ .config {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        .config input[type="number"] {
+            width: 60px;
+            margin-right: 10px;
+        }
+        .materia-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .dropzone {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            background-color: #85adfd27;
+            padding: 5px;
+            border: 5px solid #4479be93;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #0f0f0f;
+            cursor: pointer;
+        }
+
+        .dropzone.over {
+            background-color: #f0f8ff;
+            border-color: #4CAF50;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .recreo {
+            background-color: #ffcc80;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 5px;
+        }
+        .acciones{
+            text-align: center;
+        }
+        .materia{
+            color: black;
+            background-color: transparent;
+            font-size: 1em;
+        }
+       @media print {
+    table {
+        width: 100%;
+        font-size: 0.9em; /* Ajusta el tamaño de fuente si es necesario */
+    }
+
+    /* Ajustar márgenes y evitar saltos de página dentro de la tabla */
+    table, tr, th, td {
+        page-break-inside: avoid;
+    }
+}
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Mi Horario Escolar</h1>
+        <div class="materias no-print">
+            <h2>Materias</h2>
+            <div id="lista-materias"></div>
+            <input type="text" id="nueva-materia" placeholder="Nueva materia">
+            <input type="color" id="color-materia" value="#ff0000"> <!-- Selector de color -->
+            <button onclick="agregarMateria()">Agregar</button>
+        </div>
+
+        <div id="contenido-para-pdf">
+            <table id="horario">
+                <thead>
+                    <tr>
+                        <th>Hora</th>
+                        <th>Lunes</th>
+                        <th>Martes</th>
+                        <th>Miércoles</th>
+                        <th>Jueves</th>
+                        <th>Viernes</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="botones-accion no-print">
+            <button onclick="agregarFila('clase')">Agregar clase</button>
+            <button id="agregar-recreo" onclick="agregarFila('recreo')">Agregar recreo</button>
+            <button id="exportar-pdf" onclick="exportarPDF()">Exportar a PDF</button>
+        </div>
+    </div>
+<script>
+     let materias = [
+    { nombre: 'Matemáticas', color: '#ff0000' },
+    { nombre: 'Lengua', color: '#00ff00' },
+    { nombre: 'Ciencias', color: '#0000ff' },
+    { nombre: 'Historia', color: '#ffff00' },
+    { nombre: 'Arte', color: '#ff00ff' },
+    { nombre: 'Educación Física', color: '#00ffff' }
+];
+
+let horario = [
+    { tipo: 'clase', hora: '09:00', horaFin: '09:45', contenido: [{}, {}, {}, {}, {}] },
+    { tipo: 'clase', hora: '09:45', horaFin: '10:30', contenido: [{}, {}, {}, {}, {}] },
+    { tipo: 'recreo', hora: '10:30', horaFin: '11:00', contenido: 'Recreo' },
+    { tipo: 'clase', hora: '11:00', horaFin: '11:45', contenido: [{}, {}, {}, {}, {}] },
+    { tipo: 'clase', hora: '11:45', horaFin: '12:30', contenido: [{}, {}, {}, {}, {}] },
+];
+
+let duracionClase = 45;
+let duracionRecreo = 30;
+
+function incrementarHora(hora, minutos) {
+    const [horas, minutosActuales] = hora.split(':').map(Number);
+    const fecha = new Date(2000, 0, 1, horas, minutosActuales + minutos);
+    return fecha.toTimeString().slice(0, 5);
+}
+
+function agregarFila(tipo) {
+    const ultimaFila = horario[horario.length - 1];
+    const nuevaHora = ultimaFila.horaFin;
+    let nuevaHoraFin;
+
+    if (tipo === 'clase') {
+        nuevaHoraFin = incrementarHora(nuevaHora, duracionClase);
+        horario.push({ tipo: 'clase', hora: nuevaHora, horaFin: nuevaHoraFin, contenido: [{}, {}, {}, {}, {}] });
+    } else if (tipo === 'recreo') {
+        nuevaHoraFin = incrementarHora(nuevaHora, duracionRecreo);
+        horario.push({ tipo: 'recreo', hora: nuevaHora, horaFin: nuevaHoraFin, contenido: 'Recreo' });
+    }
+
+    renderizarHorario();
+}
+
+function actualizarHorasFin() {
+    let horaActual = horario[0].hora;
+    horario.forEach((fila) => {
+        fila.hora = horaActual;
+        if (fila.tipo === 'clase') {
+            fila.horaFin = incrementarHora(horaActual, duracionClase);
+        } else if (fila.tipo === 'recreo') {
+            fila.horaFin = incrementarHora(horaActual, duracionRecreo);
+        }
+        horaActual = fila.horaFin;
+    });
+}
+
+function renderizarHorario() {
+    const tbody = document.querySelector('#horario tbody');
+    tbody.innerHTML = '';
+    horario.forEach((fila, filaIndex) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="hora-celda">
+                ${fila.hora} - ${fila.horaFin}
+            </td>
+            ${fila.tipo === 'clase'
+                ? fila.contenido.map((contenido, columnaIndex) => `
+                    <td>
+                        <div class="dropzone" ondragover="permitirDrop(event)" ondrop="dropMateria(event, ${filaIndex}, ${columnaIndex})" style="background-color: ${contenido.color || ''};">
+                            ${contenido.nombre || 'Arrastra aquí'}
+                        </div>
+                    </td>
+                `).join('')
+                : `<td colspan="5" class="recreo">${fila.contenido}</td>`
+            }
+            <td class="acciones no-print">
+                <button onclick="eliminarFila(${filaIndex})"><i class="fa-regular fa-circle-xmark"></i></button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function agregarMateria() {
+    const nuevaMateria = document.getElementById('nueva-materia').value.trim();
+    const colorMateria = document.getElementById('color-materia').value; // Color seleccionado
+    if (nuevaMateria && !materias.some(m => m.nombre === nuevaMateria)) {
+        materias.push({ nombre: nuevaMateria, color: colorMateria });
+        renderizarMaterias();
+        renderizarHorario();
+        document.getElementById('nueva-materia').value = '';
+    }
+}
+
+function eliminarFila(index) {
+    horario.splice(index, 1);
+    actualizarHorasFin();
+    renderizarHorario();
+}
+
+function permitirDrop(event) {
+    event.preventDefault();
+}
+
+function dropMateria(event, filaIndex, columnaIndex) {
+    event.preventDefault();
+    const materia = event.dataTransfer.getData("materia");
+    const color = event.dataTransfer.getData("color"); // Obtener el color
+    horario[filaIndex].contenido[columnaIndex] = { nombre: materia, color: color }; // Guardar el nombre y el color
+    renderizarHorario();
+}
+
+function renderizarMaterias() {
+    const listaMaterias = document.getElementById('lista-materias');
+    listaMaterias.innerHTML = '';
+    materias.forEach((materia, index) => {
+        const div = document.createElement('div');
+        div.className = 'materia-item';
+        div.setAttribute('draggable', 'true');
+        div.setAttribute('data-materia', materia.nombre);
+        div.setAttribute('data-color', materia.color); // Guardar el color en el dataset
+        div.setAttribute('ondragstart', 'dragMateria(event)');
+        div.innerHTML = `${materia.nombre} <button class="materia" onclick="eliminarMateria(${index})">x</button>`;
+        div.style.backgroundColor = materia.color; // Aplicar el color al fondo de la materia
+        listaMaterias.appendChild(div);
+    });
+}
+
+function dragMateria(event) {
+    event.dataTransfer.setData("materia", event.target.getAttribute('data-materia'));
+    event.dataTransfer.setData("color", event.target.getAttribute('data-color')); // Pasar también el color
+}
+
+function eliminarMateria(index) {
+    materias.splice(index, 1);
+    renderizarMaterias();
+    renderizarHorario();
+}
+
+function exportarPDF() {
+    const elemento = document.getElementById('contenido-para-pdf');
+    const opciones = {
+        margin: 10,
+        filename: 'horario_escolar.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 8 }, // Aumenta la escala para capturar tablas grandes
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+
+    // Ocultar elementos no imprimibles
+    const elementosNoPrint = elemento.querySelectorAll('.no-print');
+    elementosNoPrint.forEach(el => el.style.display = 'none');
+
+    html2pdf().from(elemento).set(opciones).save().then(() => {
+        // Restaurar visibilidad de elementos no imprimibles
+        elementosNoPrint.forEach(el => el.style.display = '');
+    });
+}
+
+// Inicializar la página
+renderizarMaterias();
+renderizarHorario();
+
+</script>
+</html>
